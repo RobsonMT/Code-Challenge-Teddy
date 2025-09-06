@@ -8,6 +8,7 @@ import {
   Param,
   Delete,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { UrlsService } from './urls.service';
 import { CreateUrlDto } from './dto/create-url.dto';
@@ -15,6 +16,7 @@ import { UpdateUrlDto } from './dto/update-url.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthRequest } from 'src/auth/interfaces/auth-request.interface';
 import * as dotenv from 'dotenv';
+import { OptionalJwtAuthGuard } from 'src/common/guards/optional-jwt-auth.guard';
 
 dotenv.config();
 
@@ -23,6 +25,7 @@ export class UrlsController {
   constructor(private readonly service: UrlsService) {}
 
   // ÚNICO endpoint para encurtar (aceita anônimo ou autenticado)
+  @UseGuards(OptionalJwtAuthGuard)
   @Post()
   async create(@Body() dto: CreateUrlDto, @Request() req: AuthRequest) {
     const userId = req.user?.userId;
@@ -34,7 +37,7 @@ export class UrlsController {
       short_url: `${base}/${url.shortCode}`,
       original_url: url.originalUrl,
       clicks: url.clicks,
-      user_id: url.user?.id ?? null,
+      user_id: userId ?? null,
       created_at: url.createdAt,
       updated_at: url.updatedAt,
     };
@@ -61,7 +64,7 @@ export class UrlsController {
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUrlDto,
     @Request() req: AuthRequest,
   ) {
@@ -71,7 +74,11 @@ export class UrlsController {
   // Soft delete (APENAS AUTENTICADO)
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string, @Request() req: AuthRequest) {
-    return this.service.softDeleteMine(id, req.user.userId);
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: AuthRequest,
+  ) {
+    await this.service.softDeleteMine(id, req.user.userId);
+    return { message: 'Url removed (soft delete).' };
   }
 }

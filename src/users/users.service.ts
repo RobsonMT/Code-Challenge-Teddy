@@ -1,50 +1,55 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
+import { IsNull, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private usersRepo: Repository<User>,
   ) {}
 
-  async create(email: string, password: string): Promise<User> {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = this.usersRepository.create({
-      email,
-      password: hashedPassword,
-    });
-    return this.usersRepository.save(user);
-  }
-
-  async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({
-      where: { email, deletedAt: undefined },
+  async findByEmail(email: string) {
+    return this.usersRepo.findOne({
+      where: { email, deletedAt: IsNull() },
     });
   }
 
-  async findOneById(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({
-      where: { id, deletedAt: undefined },
+  async findOneById(id: string) {
+    const user = await this.usersRepo.findOne({
+      where: { id, deletedAt: IsNull() },
     });
     if (!user) {
-      throw new NotFoundException(`Usuário com id ${id} não encontrado`);
+      throw new NotFoundException(`User with id ${id} not found`);
     }
     return user;
   }
 
-  async softRemove(id: string): Promise<void> {
-    const user = await this.findOneById(id);
-    user.deletedAt = new Date();
-    await this.usersRepository.save(user);
+  async update(id: string, dto: UpdateUserDto) {
+    const user = await this.usersRepo.findOne({
+      where: { id, deletedAt: IsNull() },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    if (dto.password) {
+      const salt = await bcrypt.genSalt(10);
+      dto.password = await bcrypt.hash(dto.password, salt);
+    }
+
+    Object.assign(user, dto, { updatedAt: new Date() });
+
+    return await this.usersRepo.save(user);
   }
 
-  async updatePassword(id: string, newPassword: string): Promise<User> {
+  async softRemove(id: string) {
     const user = await this.findOneById(id);
-    user.password = await bcrypt.hash(newPassword, 10);
-    return this.usersRepository.save(user);
+    user.deletedAt = new Date();
+    return await this.usersRepo.save(user);
   }
 }

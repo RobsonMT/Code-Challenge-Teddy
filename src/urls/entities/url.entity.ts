@@ -8,6 +8,7 @@ import {
   DeleteDateColumn,
   ManyToOne,
   Index,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('urls')
@@ -23,8 +24,9 @@ export class Url {
   @Column({ length: 6 })
   shortCode: string;
 
-  @ManyToOne(() => User, (user) => user.urls, { nullable: true })
-  user: User | null;
+  @ManyToOne(() => User, (user) => user.urls, { nullable: true, eager: true })
+  @JoinColumn({ name: 'user_id' })
+  user?: User;
 
   @Index()
   @Column({ type: 'int', default: 0 })
