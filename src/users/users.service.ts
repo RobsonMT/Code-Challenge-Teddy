@@ -12,6 +12,12 @@ export class UsersService {
     private usersRepo: Repository<User>,
   ) {}
 
+  async createUser(email: string, password: string) {
+    const hash = await bcrypt.hash(password, 10);
+    const user = this.usersRepo.create({ email, password: hash });
+    return this.usersRepo.save(user);
+  }
+
   async findByEmail(email: string) {
     return this.usersRepo.findOne({
       where: { email, deletedAt: IsNull() },
@@ -45,6 +51,18 @@ export class UsersService {
     Object.assign(user, dto, { updatedAt: new Date() });
 
     return await this.usersRepo.save(user);
+  }
+
+  async updatePassword(userId: string, newPassword: string) {
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error(`User with id ${userId} not found`);
+    }
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    user.password = hash;
+
+    return this.usersRepo.save(user);
   }
 
   async softRemove(id: string) {
