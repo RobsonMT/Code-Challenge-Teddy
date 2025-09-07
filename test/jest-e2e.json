@@ -11,5 +11,10 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
+  "globals": {
+    "ts-jest": {
+      "tsconfig": "tsconfig.json"
+    }
+  },
   "testTimeout": 30000
 }
