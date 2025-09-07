@@ -15,8 +15,8 @@ import { CreateUrlDto } from './dto/create-url.dto';
 import { UpdateUrlDto } from './dto/update-url.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import type { AuthRequest } from 'src/auth/interfaces/auth-request.interface';
-import * as dotenv from 'dotenv';
 import { OptionalJwtAuthGuard } from 'src/common/guards/optional-jwt-auth.guard';
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -24,7 +24,6 @@ dotenv.config();
 export class UrlsController {
   constructor(private readonly service: UrlsService) {}
 
-  // ÚNICO endpoint para encurtar (aceita anônimo ou autenticado)
   @UseGuards(OptionalJwtAuthGuard)
   @Post()
   async create(@Body() dto: CreateUrlDto, @Request() req: AuthRequest) {
@@ -43,7 +42,6 @@ export class UrlsController {
     };
   }
 
-  // Listar minhas URLs com cliques (APENAS AUTENTICADO)
   @UseGuards(JwtAuthGuard)
   @Get()
   async listMine(@Request() req: AuthRequest) {
@@ -60,7 +58,6 @@ export class UrlsController {
     }));
   }
 
-  // Atualizar origem (APENAS AUTENTICADO)
   @UseGuards(JwtAuthGuard)
   @Patch(':id')
   update(
@@ -71,7 +68,6 @@ export class UrlsController {
     return this.service.updateMine(id, req.user.userId, dto);
   }
 
-  // Soft delete (APENAS AUTENTICADO)
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async remove(
